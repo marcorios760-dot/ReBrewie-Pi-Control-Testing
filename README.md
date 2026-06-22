@@ -221,6 +221,8 @@ Before exposing the app through any public hostname, enable app login in `.env`:
 ```env
 AUTH_ENABLED=true
 AUTH_ALLOW_INITIAL_REGISTRATION=true
+AUTH_REQUIRE_FOR_REMOTE=true
+AUTH_REQUIRE_FOR_LOCAL=true
 REMOTE_PUBLIC_HOSTNAME=rebrewie-pi.commogrunt.com
 MACHINE_ID=HN0251807090304
 ```
@@ -243,6 +245,15 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
 The login cookie is HTTP-only and signed. Keep `.env`, `owner-registration.json`, Cloudflare Tunnel tokens, Blink passwords, and Blink auth tokens private. The Settings page shows the registered owner and machine, and lets you update the machine label or serial number without editing files manually.
+
+Auth is required for both remote and local access by default. This is the recommended setting because the app can control pumps, valves, heaters, and cleaning/brewing programs. For controlled lab/dev use only, local LAN auth can be bypassed while keeping Cloudflare remote access protected:
+
+```env
+AUTH_REQUIRE_FOR_REMOTE=true
+AUTH_REQUIRE_FOR_LOCAL=false
+```
+
+Do not use local bypass on shared, guest, or untrusted networks.
 
 ### Recipes
 
@@ -304,6 +315,8 @@ Configuration is handled by environment variables, usually through `.env`.
 | `AUTH_COOKIE_SECURE` | `false` | Set `true` for HTTPS-only remote access |
 | `AUTH_ALLOW_INITIAL_REGISTRATION` | `true` | Allow `/register` to create the first owner account when no login exists |
 | `AUTH_REGISTRATION_FILE` | `owner-registration.json` | Private owner account and machine binding file |
+| `AUTH_REQUIRE_FOR_REMOTE` | `true` | Require login when accessed through `REMOTE_PUBLIC_HOSTNAME` |
+| `AUTH_REQUIRE_FOR_LOCAL` | `true` | Require login for local LAN/IP access |
 | `REMOTE_PUBLIC_HOSTNAME` | empty | Hostname that should show the remote connection indicator |
 | `MACHINE_ID` | `HN0251807090304` | Default registered Brewie machine ID/serial |
 | `MACHINE_REGISTRY_FILE` | `machine-registration.json` | Writable machine registration file |

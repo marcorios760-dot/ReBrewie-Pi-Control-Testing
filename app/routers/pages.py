@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 
-from ..auth import check_login, clear_session_cookie, current_user, hash_password, registration_required, set_session_cookie
+from ..auth import check_login, clear_session_cookie, current_user, hash_password, is_remote_request, registration_required, set_session_cookie
 from ..machine_registry import load_machine_registration, save_machine_registration
 from ..registration import create_owner_registration, has_owner_registration, registration_summary
 from ..state import brew_state
@@ -20,19 +20,11 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templa
 router = APIRouter()
 
 
-def _is_remote_request(request: Request) -> bool:
-    host = (request.headers.get("x-forwarded-host") or request.url.hostname or "").split(":")[0]
-    public_host = settings.remote_public_hostname.strip().lower()
-    if public_host and host.lower() == public_host:
-        return True
-    return host.lower().endswith(".commogrunt.com")
-
-
 def _context(request: Request, **extra):
     ctx = {
         "request": request,
         "state": brew_state,
-        "remote_connected": _is_remote_request(request),
+        "remote_connected": is_remote_request(request),
         "remote_hostname": settings.remote_public_hostname or request.headers.get("x-forwarded-host", ""),
         "machine_registration": load_machine_registration(),
         "owner_registration": registration_summary(),

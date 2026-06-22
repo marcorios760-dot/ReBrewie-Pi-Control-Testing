@@ -73,6 +73,22 @@ def auth_required() -> bool:
     return settings.auth_enabled or load_owner_registration() is not None
 
 
+def is_remote_request(request: Request) -> bool:
+    host = (request.headers.get("x-forwarded-host") or request.url.hostname or "").split(":")[0]
+    public_host = settings.remote_public_hostname.strip().lower()
+    if public_host and host.lower() == public_host:
+        return True
+    return bool(public_host and host.lower().endswith("." + public_host))
+
+
+def request_requires_auth(request: Request) -> bool:
+    if not auth_required():
+        return False
+    if is_remote_request(request):
+        return settings.auth_require_for_remote
+    return settings.auth_require_for_local
+
+
 def registration_required() -> bool:
     if not settings.auth_allow_initial_registration:
         return False
@@ -155,7 +171,7 @@ def _wants_html(request: Request) -> bool:
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        if not auth_required() or path.startswith(PUBLIC_PATHS):
+        if path.startswith(PUBLIC_PATHS) or not request_requires_auth(request):
             return await call_next(request)
 
         if registration_required():
